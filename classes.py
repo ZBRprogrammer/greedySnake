@@ -1,17 +1,25 @@
 import tkinter as tk
 from tkinter import *
 from tkinter import messagebox
+
+from random import randint
+
+from pygame import draw
+from pygame import Surface
+from pygame import Rect
+from pygame.time import Clock
+
 import constants
 
 
-def on_entry_click(event, entry, default_text):
+def on_entry_click(entry, default_text):
     if entry.get() == default_text:
         entry.configure(fg='black')
         entry.delete(0, tk.END)
         entry.insert(0, '')
 
 
-def on_entry_unfocus(event, entry, default_text):
+def on_entry_unfocus(entry, default_text):
     if entry.get() == '':
         entry.configure(fg='gray')
         entry.delete(0, tk.END)
@@ -24,8 +32,8 @@ def entry_template(parent, default_text) -> Entry:
     # set default text
     entry.insert(0, default_text)
     # bind functions
-    entry.bind('<FocusIn>', lambda event: on_entry_click(event, entry, default_text))
-    entry.bind('<FocusOut>', lambda event: on_entry_unfocus(event, entry, default_text))
+    entry.bind('<FocusIn>', lambda event: on_entry_click(entry, default_text))
+    entry.bind('<FocusOut>', lambda event: on_entry_unfocus(entry, default_text))
 
     return entry
 
@@ -43,24 +51,134 @@ def frame_template(parent, text, button_amount, *args) -> tuple[Frame, IntVar]:
     return frame, var
 
 
-class Snake:
-    class Node:
-        def __init__(self,front=None, rear=None):
-            self.front = front
-            self.rear = rear
-
-    def __init__(self):
-        pass
-
-
-class Food:
-    def __init__(self):
-        pass
+def get_rect(self_pos: tuple[int, int], target_pos: tuple[int, int] | None = None) -> Rect:
+    x1 = self_pos[0] * constants.BLOCK_SIZE + constants.BLOCK_INTERVAL
+    y1 = self_pos[1] * constants.BLOCK_SIZE + constants.BLOCK_INTERVAL
+    width = constants.BLOCK_SIZE - constants.BLOCK_INTERVAL
+    height = constants.BLOCK_SIZE - constants.BLOCK_INTERVAL
+    if target_pos is None:
+        return Rect(x1, y1, width, height)
+    if (self_pos[0] + 1 + game_controller.map_width) % game_controller.map_width == target_pos[0]:  # connect to right
+        width += constants.BLOCK_INTERVAL
+    elif (self_pos[1] + 1 + game_controller.map_height) % game_controller.map_height == target_pos[
+        1]:  # connect to down
+        height += constants.BLOCK_INTERVAL
+    elif (self_pos[0] - 1 + game_controller.map_width) % game_controller.map_width == target_pos[0]:  # connect to left
+        x1 -= constants.BLOCK_INTERVAL
+    elif (self_pos[1] - 1 + game_controller.map_height) % game_controller.map_height == target_pos[1]:  # connect to up
+        y1 -= constants.BLOCK_INTERVAL
+    return Rect(x1, y1, width, height)
 
 
 class GameController:
-    def __init__(self):
-        pass
+    class Food:
+        def __init__(self, pos: tuple[int, int], value: int, bonus: bool):
+            self.pos = pos
+            self.value = value
+            self.is_bonus = bonus
+            self.color = constants.FOOD_COLOR_LIST[0]
+
+        def value_decline(self):
+            self.value -= 1
+
+        def get_color(self):
+            self.color = constants.FOOD_COLOR_LIST[(self.value-constants.FOOD_VALUE_MIN) // ((
+                        constants.FOOD_VALUE_MAX - constants.FOOD_VALUE_MIN // len(constants.FOOD_COLOR_LIST) - 1))]
+
+    class Snake:
+        def __init__(self, head: tuple[int, int], body: list[tuple[int, int]], head_color: str, body_color: str):
+            self.snake_list = [head, *body]
+            self.velocity = (0, 0)
+            self.head_color = head_color
+            self.body_color = body_color
+
+        def move(self):
+            snake_head_pos = self.snake_list[0]
+            new_pos = ((snake_head_pos[0] + self.velocity[0] + game_controller.map_width) % game_controller.map_width,
+                       (snake_head_pos[1] + self.velocity[1] + game_controller.map_height) % game_controller.map_height)
+            self.snake_list.insert(0, new_pos)
+
+        def pop(self):
+            self.snake_list.pop(-1)
+
+        def change_direction(self, new_velocity: tuple[int, int]):
+            self.velocity = new_velocity
+
+    def __init__(self, score: int, screen: Surface | None, screen_size: tuple[int, int],
+                 map_size: tuple[int, int], run_interval: int, running: bool, snake_moving: bool, clock: Clock | None,
+                 snake_head_color: str, snake_body_color: str):
+        self.score = score
+        self.ticks = 0
+        self.screen = screen
+        self.width, self.height = screen_size
+        self.map_width, self.map_height = map_size
+        self.run_interval = run_interval
+        self.running = running
+        self.snake_moving = snake_moving
+        self.clock = clock
+        self.snake = self.Snake((randint(0, self.map_width), randint(0, self.map_height)), [], snake_head_color,
+                                snake_body_color)
+        self.food = self.Food((0, 0), 0, False)
+        self.is_key_down = False
+        self.recorded_key_state = self.is_key_down
+
+    def tick(self):
+        self.ticks += 1
+        self.ticks %= constants.FPS
+
+    def initialize(self):
+        self.snake.snake_list = [(randint(0, self.map_width), randint(0, self.map_height))]
+        self.snake.velocity = constants.DIRECTIONS[randint(0, 3)]
+        self.snake_moving = True
+        self.summon_new_food()
+
+    def snake_move(self):
+        if self.ticks%self.run_interval != 0:
+            return
+        self.snake.move()
+        for i in self.snake.snake_list[1:]:
+            if i == self.snake.snake_list[0]:
+                self.snake_moving = False
+        if self.snake.snake_list[0] != self.food.pos:
+            self.snake.pop()
+        else:
+            self.score += self.food.value
+            self.summon_new_food()
+
+    def summon_new_food(self):
+        self.food.pos = (randint(0, self.map_width),  # x pos
+                         randint(0, self.map_height))  # y pos
+        self.food.value = randint(constants.FOOD_VALUE_MIN, constants.FOOD_VALUE_MAX)  # value
+        self.food.is_bonus = (self.score // constants.FOOD_BONUS_INTERVAL).is_integer()  # is bonus
+        self.food.get_color()
+
+    def tick_food_value(self):
+        if self.ticks % constants.FOOD_BONUS_DECLINE_INTERVAL == 0:
+            self.food.value_decline()
+            if self.food.value < constants.FOOD_DISAPPEAR_THRESHOLD:
+                self.summon_new_food()
+
+    def get_key_respond(self):
+        if self.is_key_down and self.recorded_key_state != self.is_key_down:
+            self.recorded_key_state = self.is_key_down
+            pass
+
+    def draw(self):
+        if len(self.snake.snake_list) == 1:
+            draw.rect(self.screen, self.snake.head_color, get_rect(self.snake.snake_list[0]))
+        elif len(self.snake.snake_list) == 2:
+            draw.rect(self.screen, self.snake.head_color, get_rect(self.snake.snake_list[0], self.snake.snake_list[1]))
+            draw.rect(self.screen, self.snake.body_color, get_rect(self.snake.snake_list[1], self.snake.snake_list[0]))
+        else:
+            draw.rect(self.screen, self.snake.head_color, get_rect(self.snake.snake_list[0], self.snake.snake_list[1]))
+            for i in range(1, len(self.snake.snake_list) - 1):
+                draw.rect(self.screen, self.snake.body_color,
+                          get_rect(self.snake.snake_list[i], self.snake.snake_list[i - 1]))
+                draw.rect(self.screen, self.snake.body_color,
+                          get_rect(self.snake.snake_list[i], self.snake.snake_list[i + 1]))
+            draw.rect(self.screen, self.snake.body_color,
+                      get_rect(self.snake.snake_list[-1], self.snake.snake_list[-2]))
+        draw.rect(self.screen,self.food.color,get_rect(self.food.pos))
 
 
 class GUI:
@@ -85,23 +203,23 @@ class GUI:
 
     def validate(self):
         if self.size_var.get() <= 2:
-            constants.map_width, constants.map_height = constants.WIDTH_HEIGHT_LIST[self.size_var.get()]
+            game_controller.map_width, game_controller.map_height = constants.WIDTH_HEIGHT_LIST[self.size_var.get()]
         elif self.size_var.get() == 3 and self.width_entry.get().isdigit() and self.height_entry.get().isdigit() and int(
                 self.width_entry.get()) > 0 and int(self.height_entry.get()) > 0:
-            constants.map_width, constants.map_height = self.width_entry.get(), self.height_entry.get()
+            game_controller.map_width, game_controller.map_height = int(self.width_entry.get()), int(self.height_entry.get())
         else:
             messagebox.showerror(title='Error', message='Size input is invalid')
             return
         if self.difficulty_var.get() <= 2:
-            constants.fps = constants.SPEED_LIST[self.difficulty_var.get()]
+            game_controller.run_interval = constants.SPEED_LIST[self.difficulty_var.get()]
         elif self.difficulty_var.get() == 3 and self.speed_entry.get().isdigit() and int(self.speed_entry.get()) > 0:
-            constants.fps = self.speed_entry.get()
+            game_controller.run_interval = int(self.speed_entry.get())
         else:
             messagebox.showerror(title='Error', message='Speed input is invalid')
             return
         if self.head_color_var.get() != self.body_color_var.get():
-            constants.head_color = self.head_color_var.get()
-            constants.body_color = self.body_color_var.get()
+            game_controller.snake.head_color = self.head_color_var.get()
+            game_controller.snake.body_color = self.body_color_var.get()
         else:
             messagebox.showerror(title='Error', message='Head color and Body color cannot be the same')
             return
@@ -184,6 +302,8 @@ class GUI:
     def get_screen_size(self) -> tuple[int, int]:
         return self.tk.winfo_screenwidth(), self.tk.winfo_screenheight()
 
+
+game_controller = GameController(0, None, (0, 0), (0, 0), 0, False, False, None, '', '')
 
 if __name__ == '__main__':
     test_gui = GUI()
