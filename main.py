@@ -1,6 +1,10 @@
 import pygame
 from pygame.locals import *
 
+<<<<<<< HEAD
+=======
+import constants
+>>>>>>> e86ca2a1b396c96e6e4b2af92c120477b237efc8
 from classes import *
 
 
