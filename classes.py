@@ -83,10 +83,13 @@ class GameController:
 
         def value_decline(self):
             self.value -= 1
+            self.get_color()
 
         def get_color(self):
-            self.color = constants.FOOD_COLOR_LIST[(self.value-constants.FOOD_VALUE_MIN) // ((
-                        constants.FOOD_VALUE_MAX - constants.FOOD_VALUE_MIN // len(constants.FOOD_COLOR_LIST) - 1))]
+            self.color = constants.FOOD_COLOR_LIST[
+                min((self.value - constants.FOOD_VALUE_MIN) * len(constants.FOOD_COLOR_LIST) // (
+                        constants.FOOD_VALUE_MAX - constants.FOOD_VALUE_MIN + 1),
+                    len(constants.FOOD_COLOR_LIST) - 1)]
 
     class Snake:
         def __init__(self, head: tuple[int, int], body: list[tuple[int, int]], head_color: str, body_color: str):
@@ -125,15 +128,14 @@ class GameController:
         self.is_key_down = False
         self.recorded_key_state = self.is_key_down
         self.recorded_key_pressed = None
-        self.tmp_direction = (0,0)
+        self.tmp_direction = (0, 0)
         self.running_tick = 0
 
     def tick(self):
         self.ticks += 1
         self.ticks %= constants.FPS
         if self.ticks % self.run_interval == 0:
-            self.running_tick+=1
-
+            self.running_tick += 1
 
     def initialize(self):
         self.snake.snake_list = [(randint(0, self.map_width), randint(0, self.map_height))]
@@ -142,18 +144,18 @@ class GameController:
         self.summon_new_food()
 
     def snake_move(self):
-        if self.ticks%self.run_interval != 0:
+        if self.ticks % self.run_interval != 0:
             return
         self.snake.velocity = self.tmp_direction
         self.snake.move()
-        for i in self.snake.snake_list[1:]:
-            if i == self.snake.snake_list[0]:
-                self.snake_moving = False
         if self.snake.snake_list[0] != self.food.pos:
             self.snake.pop()
         else:
             self.score += self.food.value
             self.summon_new_food()
+        for i in self.snake.snake_list[1:]:
+            if i == self.snake.snake_list[0]:
+                self.snake_moving = False
 
     def summon_new_food(self):
         while True:
@@ -166,10 +168,9 @@ class GameController:
                     break
             if valid:
                 break
-        self.food.value = randint(constants.FOOD_VALUE_MIN, constants.FOOD_VALUE_MAX)  # value
-        self.food.is_bonus = ((self.score+1) / constants.FOOD_BONUS_INTERVAL).is_integer() ^ self.food.is_bonus  # is bonus
+        self.food.value = randint(constants.FOOD_VALUE_MIN, constants.FOOD_VALUE_MAX)
+        self.food.is_bonus = ((self.score + 1) / constants.FOOD_BONUS_INTERVAL).is_integer() & (not self.food.is_bonus)
         self.food.get_color()
-        # print(f"DEBUG: is_bonus: {self.food.is_bonus}")
 
     def tick_food_value(self):
         if not self.food.is_bonus:
@@ -179,23 +180,24 @@ class GameController:
             if self.food.value < constants.FOOD_DISAPPEAR_THRESHOLD:
                 self.summon_new_food()
 
-    def get_key_respond(self, key_pressed:pygame.key.ScancodeWrapper):
+    def get_key_respond(self, key_pressed: pygame.key.ScancodeWrapper):
         # check if key_pressed changed
         if self.recorded_key_state != self.is_key_down:
-            if self.is_key_down: # record key_pressed
+            if self.is_key_down:  # record key_pressed
                 self.recorded_key_pressed = key_pressed
-            if self.recorded_key_state: # wait for key_up
+            if self.recorded_key_state:  # wait for key_up
                 for key, value in constants.KEY_DIRECTION_MAPPING.items():
-                    if self.recorded_key_pressed[key] and tuple(map(sum,zip(self.snake.velocity,constants.DIRECTIONS[value]))) != (0,0):
+                    if self.recorded_key_pressed[key] and tuple(
+                            map(sum, zip(self.snake.velocity, constants.DIRECTIONS[value]))) != (0, 0):
                         # tuple(map(sum,zip(self.snake.velocity,constants.DIRECTIONS[value]))) != (0,0) -> check if directions are opposing
-                        self.tmp_direction = constants.DIRECTIONS[value] # record input direction
+                        self.tmp_direction = constants.DIRECTIONS[value]  # record input direction
                         break
-            self.recorded_key_state = self.is_key_down # change state
+            self.recorded_key_state = self.is_key_down  # change state
 
     def draw(self):
         for i in range(self.map_width):
             for j in range(self.map_height):
-                draw.rect(self.screen,constants.BACKGROUND_COLOR,get_rect((i,j)))
+                draw.rect(self.screen, constants.BACKGROUND_COLOR, get_rect((i, j)))
         if len(self.snake.snake_list) == 1:
             draw.rect(self.screen, self.snake.head_color, get_rect(self.snake.snake_list[0]))
         elif len(self.snake.snake_list) == 2:
@@ -210,7 +212,7 @@ class GameController:
                           get_rect(self.snake.snake_list[i], self.snake.snake_list[i + 1]))
             draw.rect(self.screen, self.snake.body_color,
                       get_rect(self.snake.snake_list[-1], self.snake.snake_list[-2]))
-        draw.rect(self.screen,self.food.color,get_rect(self.food.pos))
+        draw.rect(self.screen, self.food.color, get_rect(self.food.pos))
 
 
 class GUI:
@@ -238,7 +240,8 @@ class GUI:
             game_controller.map_width, game_controller.map_height = constants.WIDTH_HEIGHT_LIST[self.size_var.get()]
         elif self.size_var.get() == 3 and self.width_entry.get().isdigit() and self.height_entry.get().isdigit() and int(
                 self.width_entry.get()) > 0 and int(self.height_entry.get()) > 0:
-            game_controller.map_width, game_controller.map_height = int(self.width_entry.get()), int(self.height_entry.get())
+            game_controller.map_width, game_controller.map_height = int(self.width_entry.get()), int(
+                self.height_entry.get())
         else:
             messagebox.showerror(title='Error', message='Size input is invalid')
             return
