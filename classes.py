@@ -406,12 +406,8 @@ class AutoPlay:
 
         return self.HamiltonianCycle(cycle, pos_to_index, next_pos, prev_pos)
 
-<<<<<<< HEAD
     @staticmethod
     def is_body_continuous_on_cycle(snake: GameController.Snake, h_cycle: HamiltonianCycle) -> bool:
-=======
-    def is_body_continuous_on_cycle(self, snake: GameController.Snake, h_cycle: HamiltonianCycle) -> bool:
->>>>>>> e86ca2a1b396c96e6e4b2af92c120477b237efc8
         """检查蛇身体是否在环上形成连续段"""
         grid_area = len(h_cycle.cycle)
         indices = []
@@ -497,12 +493,8 @@ class AutoPlay:
         else:
             return self.find_safe_direction(snake)
 
-<<<<<<< HEAD
     @staticmethod
     def find_target_segment(snake: GameController.Snake, h_cycle: HamiltonianCycle) -> tuple[int, int] | None:
-=======
-    def find_target_segment(self, snake: GameController.Snake, h_cycle: HamiltonianCycle) -> tuple[int, int] | None:
->>>>>>> e86ca2a1b396c96e6e4b2af92c120477b237efc8
         """寻找环上适合的连续空闲段"""
         grid_area = len(h_cycle.cycle)
         snake_length = len(snake.snake_list)
@@ -730,20 +722,12 @@ class AutoPlay:
 
         # 选择主要方向
         if abs(dx) > abs(dy):
-<<<<<<< HEAD
             return 1 if dx > 0 else -1, 0
         else:
             return 0, 1 if dy > 0 else -1
 
     @staticmethod
     def is_relatively_safe_move(new_head: tuple[int, int], snake: GameController.Snake) -> bool:
-=======
-            return (1 if dx > 0 else -1, 0)
-        else:
-            return (0, 1 if dy > 0 else -1)
-
-    def is_relatively_safe_move(self, new_head: tuple[int, int], snake: GameController.Snake) -> bool:
->>>>>>> e86ca2a1b396c96e6e4b2af92c120477b237efc8
         """检查移动是否相对安全（允许尾部碰撞）"""
         # 允许移动到尾部位置（因为尾部会移动）
         return new_head not in snake.snake_list[:-1]
@@ -780,12 +764,8 @@ class AutoPlay:
             neighbors.append((new_x, new_y))
         return neighbors
 
-<<<<<<< HEAD
     @staticmethod
     def is_safe_move_simulation(new_head: tuple[int, int], obstacles: list[tuple[int, int]]) -> bool:
-=======
-    def is_safe_move_simulation(self, new_head: tuple[int, int], obstacles: list[tuple[int, int]]) -> bool:
->>>>>>> e86ca2a1b396c96e6e4b2af92c120477b237efc8
         """模拟移动后的安全性验证"""
         new_obstacles = obstacles.copy()
         if len(new_obstacles) > 0:
@@ -793,12 +773,8 @@ class AutoPlay:
 
         return new_head not in new_obstacles
 
-<<<<<<< HEAD
     @staticmethod
     def reconstruct_path(parent: dict[tuple[int, int], tuple[int, int]],
-=======
-    def reconstruct_path(self, parent: dict[tuple[int, int], tuple[int, int]],
->>>>>>> e86ca2a1b396c96e6e4b2af92c120477b237efc8
                          start: tuple[int, int], target: tuple[int, int]) -> list[tuple[int, int]]:
         """重构路径"""
         path = []
@@ -842,12 +818,8 @@ class AutoPlay:
 
         return []
 
-<<<<<<< HEAD
     @staticmethod
     def is_safe_move(new_head: tuple[int, int], snake: GameController.Snake) -> bool:
-=======
-    def is_safe_move(self, new_head: tuple[int, int], snake: GameController.Snake) -> bool:
->>>>>>> e86ca2a1b396c96e6e4b2af92c120477b237efc8
         """检查移动是否安全"""
         return new_head not in snake.snake_list[:-1]
 
@@ -866,11 +838,7 @@ class AutoPlay:
         if dy == -1 or dy == self.map_size[1] - 1:
             return constants.DIRECTIONS[2]  # UP
 
-<<<<<<< HEAD
         return 0, 0
-=======
-        return (0, 0)
->>>>>>> e86ca2a1b396c96e6e4b2af92c120477b237efc8
 
     def find_safe_direction(self, snake: GameController.Snake) -> tuple[int, int]:
         """寻找任何安全的移动方向"""
