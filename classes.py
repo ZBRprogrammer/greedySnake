@@ -4,6 +4,7 @@ from tkinter import messagebox
 
 from random import randint
 
+import pygame.key
 from pygame import draw
 from pygame import Surface
 from pygame import Rect
@@ -65,8 +66,10 @@ def get_rect(self_pos: tuple[int, int], target_pos: tuple[int, int] | None = Non
         height += constants.BLOCK_INTERVAL
     elif (self_pos[0] - 1 + game_controller.map_width) % game_controller.map_width == target_pos[0]:  # connect to left
         x1 -= constants.BLOCK_INTERVAL
+        width += constants.BLOCK_INTERVAL
     elif (self_pos[1] - 1 + game_controller.map_height) % game_controller.map_height == target_pos[1]:  # connect to up
         y1 -= constants.BLOCK_INTERVAL
+        height += constants.BLOCK_INTERVAL
     return Rect(x1, y1, width, height)
 
 
@@ -121,20 +124,27 @@ class GameController:
         self.food = self.Food((0, 0), 0, False)
         self.is_key_down = False
         self.recorded_key_state = self.is_key_down
+        self.recorded_key_pressed = None
+        self.tmp_direction = (0,0)
+        self.running_tick = 0
 
     def tick(self):
         self.ticks += 1
         self.ticks %= constants.FPS
+        if self.ticks % self.run_interval == 0:
+            self.running_tick+=1
+
 
     def initialize(self):
         self.snake.snake_list = [(randint(0, self.map_width), randint(0, self.map_height))]
-        self.snake.velocity = constants.DIRECTIONS[randint(0, 3)]
+        self.snake.velocity = self.tmp_direction = constants.DIRECTIONS[randint(0, 3)]
         self.snake_moving = True
         self.summon_new_food()
 
     def snake_move(self):
         if self.ticks%self.run_interval != 0:
             return
+        self.snake.velocity = self.tmp_direction
         self.snake.move()
         for i in self.snake.snake_list[1:]:
             if i == self.snake.snake_list[0]:
@@ -146,24 +156,46 @@ class GameController:
             self.summon_new_food()
 
     def summon_new_food(self):
-        self.food.pos = (randint(0, self.map_width),  # x pos
-                         randint(0, self.map_height))  # y pos
+        while True:
+            self.food.pos = (randint(0, self.map_width - 1),  # x pos
+                             randint(0, self.map_height - 1))  # y pos
+            valid = True
+            for body in self.snake.snake_list:
+                if self.food.pos == body:
+                    valid = False
+                    break
+            if valid:
+                break
         self.food.value = randint(constants.FOOD_VALUE_MIN, constants.FOOD_VALUE_MAX)  # value
-        self.food.is_bonus = (self.score // constants.FOOD_BONUS_INTERVAL).is_integer()  # is bonus
+        self.food.is_bonus = ((self.score+1) / constants.FOOD_BONUS_INTERVAL).is_integer() ^ self.food.is_bonus  # is bonus
         self.food.get_color()
+        # print(f"DEBUG: is_bonus: {self.food.is_bonus}")
 
     def tick_food_value(self):
-        if self.ticks % constants.FOOD_BONUS_DECLINE_INTERVAL == 0:
+        if not self.food.is_bonus:
+            return
+        if self.running_tick % constants.FOOD_BONUS_DECLINE_INTERVAL == 0:
             self.food.value_decline()
             if self.food.value < constants.FOOD_DISAPPEAR_THRESHOLD:
                 self.summon_new_food()
 
-    def get_key_respond(self):
-        if self.is_key_down and self.recorded_key_state != self.is_key_down:
-            self.recorded_key_state = self.is_key_down
-            pass
+    def get_key_respond(self, key_pressed:pygame.key.ScancodeWrapper):
+        # check if key_pressed changed
+        if self.recorded_key_state != self.is_key_down:
+            if self.is_key_down: # record key_pressed
+                self.recorded_key_pressed = key_pressed
+            if self.recorded_key_state: # wait for key_up
+                for key, value in constants.KEY_DIRECTION_MAPPING.items():
+                    if self.recorded_key_pressed[key] and tuple(map(sum,zip(self.snake.velocity,constants.DIRECTIONS[value]))) != (0,0):
+                        # tuple(map(sum,zip(self.snake.velocity,constants.DIRECTIONS[value]))) != (0,0) -> check if directions are opposing
+                        self.tmp_direction = constants.DIRECTIONS[value] # record input direction
+                        break
+            self.recorded_key_state = self.is_key_down # change state
 
     def draw(self):
+        for i in range(self.map_width):
+            for j in range(self.map_height):
+                draw.rect(self.screen,constants.BACKGROUND_COLOR,get_rect((i,j)))
         if len(self.snake.snake_list) == 1:
             draw.rect(self.screen, self.snake.head_color, get_rect(self.snake.snake_list[0]))
         elif len(self.snake.snake_list) == 2:

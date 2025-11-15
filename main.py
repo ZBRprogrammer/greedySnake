@@ -25,10 +25,11 @@ def main():
             if event.type == KEYUP:
                 game_controller.is_key_down = False
         game_controller.tick()
-        game_controller.get_key_respond()
+        game_controller.get_key_respond(pygame.key.get_pressed())
         game_controller.screen.fill('black')
         if game_controller.snake_moving:
             game_controller.snake_move()
+            game_controller.tick_food_value()
         game_controller.draw()
         pygame.display.update()
         game_controller.clock.tick(constants.FPS)
