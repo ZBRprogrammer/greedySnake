@@ -4,6 +4,9 @@ TITLE = 'Greedy Snake'
 INPUT_WIDTH, INPUT_HEIGHT = 500, 200
 INPUT_TITLE = 'Greedy Snake'
 INPUT_SUBTITLE = 'Config'
+INPUT_AUTOMATION_CONFIG = 'Auto Play: '
+INPUT_AUTOMATION_YES = 'Yes'
+INPUT_AUTOMATION_NO = 'No'
 INPUT_SIZE_CONFIG = 'Size: '
 INPUT_SIZE_SMALL = 'small'
 SMALL_WIDTH, SMALL_HEIGHT = 20, 20
@@ -48,7 +51,7 @@ KEY_DIRECTION_MAPPING = {
     pygame.K_RIGHT: 1,
     pygame.K_d: 1,
     pygame.K_UP: 2,
-    pygame.K_w : 2,
+    pygame.K_w: 2,
     pygame.K_LEFT: 3,
     pygame.K_a: 3,
 }

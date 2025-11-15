@@ -3,7 +3,7 @@
 To-do list: 
 
 - [x] GUI of config
-- [ ] main logic of project
-- [ ] manual-controlled snake
-- [ ] algorithm-controlled snake
+- [x] main logic of project
+- [x] manual-controlled snake
+- [x] algorithm-controlled snake (a stupid snake actually)
 

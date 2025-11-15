@@ -1,7 +1,7 @@
-from classes import *
-import constants
 import pygame
 from pygame.locals import *
+
+from classes import *
 
 
 def window_setup():
@@ -12,9 +12,21 @@ def window_setup():
     game_controller.running = True
 
 
-def main():
-    window_setup()
-    game_controller.initialize()
+def auto_play():
+    auto_play_instance = AutoPlay((game_controller.map_width, game_controller.map_height))
+    while game_controller.running:
+        game_controller.tick()
+        game_controller.change_direction(auto_play_instance.control(game_controller.snake, game_controller.food))
+        game_controller.screen.fill('black')
+        if game_controller.snake_moving:
+            game_controller.snake_move()
+            game_controller.tick_food_value()
+        game_controller.draw()
+        pygame.display.update()
+        game_controller.clock.tick(constants.FPS)
+
+
+def manual_play():
     while game_controller.running:
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -34,6 +46,14 @@ def main():
         pygame.display.update()
         game_controller.clock.tick(constants.FPS)
 
+
+def main():
+    window_setup()
+    game_controller.initialize()
+    if game_controller.automated:
+        auto_play()
+    else:
+        manual_play()
     pygame.quit()
 
 
