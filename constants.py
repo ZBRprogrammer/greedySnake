@@ -1,6 +1,10 @@
 import pygame
 
 TITLE = 'Greedy Snake'
+MANUAL_PLAY_TITLE = 'Greedy Snake (Manual Play) Score: {score}, High Score: {high_score}'
+AUTO_PLAY_TITLE = 'Greedy Snake (Auto Play) Score:  {score}, High Score: {high_score}'
+PAUSED_TITLE = 'Greedy Snake Paused (press "SPACE" or "p" to continue)'
+DEAD_TITLE = 'Greedy Snake Dead (press "r" to respawn) Score:  {score}, High Score: {high_score}'
 INPUT_WIDTH, INPUT_HEIGHT = 500, 200
 INPUT_TITLE = 'Greedy Snake'
 INPUT_SUBTITLE = 'Config'
@@ -54,4 +58,7 @@ KEY_DIRECTION_MAPPING = {
     pygame.K_w: 2,
     pygame.K_LEFT: 3,
     pygame.K_a: 3,
+    pygame.K_p: 4,
+    pygame.K_SPACE: 4,
+    pygame.K_r: 5,
 }

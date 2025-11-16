@@ -4,7 +4,7 @@ from queue import Queue
 from random import randint
 from tkinter import *
 from tkinter import messagebox
-
+from encrypt import *
 import pygame.key
 from pygame import Rect
 from pygame import Surface
@@ -129,6 +129,9 @@ class GameController:
         self.tmp_direction = (0, 0)
         self.running_tick = 0
         self.automated = False
+        self.pausing = False
+        self.about_to_respawn = False
+        self.high_score = 0
 
     def tick(self):
         self.ticks += 1
@@ -137,9 +140,13 @@ class GameController:
             self.running_tick += 1
 
     def initialize(self):
+        self.high_score = get_high_score()
+        self.score = 0
         self.snake.snake_list = [(randint(0, self.map_width), randint(0, self.map_height))]
         self.snake.velocity = self.tmp_direction = constants.DIRECTIONS[randint(0, 3)]
         self.snake_moving = True
+        self.pausing = False
+        self.about_to_respawn = False
         self.summon_new_food()
 
     def change_direction(self, new_velocity: tuple[int, int]):
@@ -170,8 +177,8 @@ class GameController:
                     break
             if valid:
                 break
-        self.food.value = randint(constants.FOOD_VALUE_MIN, constants.FOOD_VALUE_MAX)
         self.food.is_bonus = ((self.score + 1) / constants.FOOD_BONUS_INTERVAL).is_integer() & (not self.food.is_bonus)
+        self.food.value = constants.FOOD_VALUE_MAX if self.food.is_bonus else 1
         self.food.get_color()
 
     def tick_food_value(self):
@@ -189,10 +196,17 @@ class GameController:
                 self.recorded_key_pressed = key_pressed
             if self.recorded_key_state:  # wait for key_up
                 for key, value in constants.KEY_DIRECTION_MAPPING.items():
-                    if self.recorded_key_pressed[key] and tuple(
+                    if self.recorded_key_pressed[key] and value <= 3 and tuple(
                             map(sum, zip(self.snake.velocity, constants.DIRECTIONS[value]))) != (0, 0):
                         # tuple(map(sum,zip(self.snake.velocity,constants.DIRECTIONS[value]))) != (0,0) -> check if directions are opposing
                         self.tmp_direction = constants.DIRECTIONS[value]  # record input direction
+                        break
+                    elif self.recorded_key_pressed[key] and value == 4:
+                        print(key,value)
+                        self.pausing = not self.pausing
+                        break
+                    elif self.recorded_key_pressed[key] and value == 5 and self.snake_moving == False:
+                        self.about_to_respawn = True
                         break
             self.recorded_key_state = self.is_key_down  # change state
 
